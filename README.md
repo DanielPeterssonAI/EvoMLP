@@ -2,7 +2,7 @@
 MLP without backpropagation
 
 ### **Quick theory behind the model**
-This regressor and classifier models is fitted using N nets where the weights of the best N/4 nets repeatedly are paired into six new nets with a small random number added to the resulting nets weights. 
+This regressor and classifier model is fitted using N nets where the weights of the best N/4 nets repeatedly are paired into six new nets with a small random number added to the resulting nets weights. 
 
 In the world of regressors and classifiers this model is problably not adding anything of value, but I thought it was a cool project and it turned out way more capable than I first thought.
 
