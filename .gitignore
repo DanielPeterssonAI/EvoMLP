@@ -129,3 +129,6 @@ dmypy.json
 .pyre/
 .DS_store
 Pipfile.lock
+evo_regressor_test.ipynb
+sns_mpg.p
+evo_regressor_test.ipynb
