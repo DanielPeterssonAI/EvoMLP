@@ -5,12 +5,14 @@ class EvoMLPRegressor:
     def __init__(
         self, 
         n = 24, 
+        max_iter = 1000,
         hidden_layer_sizes = False, 
         activation = "relu", 
         lr_target = 0.002, 
         lr_initial_decay = 20, 
         lr_final_decay = 0.02, 
-        random_state = None
+        random_state = None,
+        verbose = 0
     ):
         self.n = int(round(n / 8) * 8)
         self.validation_loss_history = []
@@ -21,14 +23,22 @@ class EvoMLPRegressor:
         self.lr_initial_decay = lr_initial_decay
         self.lr_final_decay = lr_final_decay
         self.hidden_layer_sizes = hidden_layer_sizes
+        self.max_iter = max_iter
+        self.verbose = verbose
 
-    def fit(self, X_train, y_train, epochs = 100, validation_data = False, verbose = 0):
+
+    def fit(self, X_train, y_train, validation_data = False):
 
         if self.random_state != None:
             np.random.seed(self.random_state)
 
         if validation_data:
             X_val, y_val = validation_data
+
+        verbose = self.verbose
+
+        # Add bias column to X
+        X_train = np.c_[np.ones(X_train.shape[0]), X_train]
 
         if self.activation == "sigmoid":
             activation_function = lambda x: 1 / (1 + np.exp(-x))
@@ -37,8 +47,6 @@ class EvoMLPRegressor:
         elif self.activation == "relu":
             activation_function = lambda x: np.maximum(0, x)
         
-        # Add bias column to X
-        X_train = np.c_[np.ones(X_train.shape[0]), X_train]
         
         if self.hidden_layer_sizes:
             layers = [X_train.shape[1]] + self.hidden_layer_sizes + [1]
@@ -48,6 +56,8 @@ class EvoMLPRegressor:
         n = self.n
         ndiv4 = n // 4
         number_of_layers_minus_one = len(layers) - 1
+
+        max_iter = self.max_iter
 
         lr_target = self.lr_target
         lr_initial_decay = self.lr_initial_decay
@@ -63,7 +73,7 @@ class EvoMLPRegressor:
         for i in range(number_of_layers_minus_one):
             weights += [np.random.normal(0, 2, (n, layers[i], layers[i + 1]))]
 
-        for epoch in range(epochs):
+        for iteration in range(max_iter):
             forward_pass = X_train.T
             
             # Hidden layers
@@ -79,7 +89,7 @@ class EvoMLPRegressor:
             
             sorted_indices = np.argsort(nets_loss)
 
-            mutation_sigma = math.exp(-epoch / (epochs / (lr_initial_decay * math.log10(epochs + 1)))) + lr_final_decay * math.exp(-(epoch + 1) * (1 / (epochs))) + lr_target + (-0.035 * 10 * lr_final_decay)
+            mutation_sigma = math.exp(-iteration / (max_iter / (lr_initial_decay * math.log10(max_iter + 1)))) + lr_final_decay * math.exp(-(iteration + 1) * (1 / (max_iter))) + lr_target + (-0.035 * 10 * lr_final_decay)
 
             for j in range(number_of_layers_minus_one):
                 weights[j][sorted_indices[0 + ndiv4::6]] = (weights[j][sorted_indices[0: ndiv4: 2]] + weights[j][sorted_indices[1: ndiv4: 2]]) / 2 + np.random.normal(0, mutation_sigma, (ndiv4 // 2, layers[j], layers[j + 1]))
@@ -100,11 +110,11 @@ class EvoMLPRegressor:
                 if validation_data:
                     self.validation_loss_history += [np.mean(np.abs(y_val - self.predict(X_val)))]
                     if verbose == 1:
-                        print(f"Epoch {epoch} - loss: {self.training_loss_history[-1]} - val_loss: {self.validation_loss_history[-1]} - sigma: {mutation_sigma}")
+                        print(f"Epoch {iteration} - loss: {self.training_loss_history[-1]} - val_loss: {self.validation_loss_history[-1]} - sigma: {mutation_sigma}")
                 else:
                     if verbose == 1:
                         pass
-                        print(f"Epoch {epoch} - loss: {self.training_loss_history[-1]} - sigma: {mutation_sigma}")
+                        print(f"Epoch {iteration} - loss: {self.training_loss_history[-1]} - sigma: {mutation_sigma}")
 
 
     def predict(self, X):
@@ -126,10 +136,18 @@ class EvoMLPRegressor:
 
 
 class EvoMLPClassifier:
-    '''LATEST VERSION, TESTED WITH MULTICLASS AND BINARY'''
-
-    def __init__(self, n = 24, hidden_layers = False, activation = "relu", lr_target = 0.04, lr_initial_decay = 60, lr_final_decay = 0.03, random_state = None):
-
+    def __init__(
+        self, 
+        n = 24, 
+        max_iter = 1000,
+        hidden_layer_sizes = False, 
+        activation = "relu", 
+        lr_target = 0.002, 
+        lr_initial_decay = 20, 
+        lr_final_decay = 0.02, 
+        random_state = None,
+        verbose = 0
+    ):
         self.n = int(round(n / 8) * 8)
         self.validation_loss_history = []
         self.training_loss_history = []
@@ -138,25 +156,31 @@ class EvoMLPClassifier:
         self.lr_target = lr_target
         self.lr_initial_decay = lr_initial_decay
         self.lr_final_decay = lr_final_decay
+        self.hidden_layer_sizes = hidden_layer_sizes
+        self.max_iter = max_iter
+        self.verbose = verbose
 
-        
-        if hidden_layers:
-            self.hidden_layers = hidden_layers
-        else:
-            self.hidden_layers = False
 
-        
-
-    def fit(self, X_train, y_train, epochs = 100, validation_data = False, verbose = 0):
-
-        n = self.n
-        ndiv4 = n // 4
+    def fit(self, X_train, y_train, validation_data = False):
 
         if self.random_state != None:
             np.random.seed(self.random_state)
 
+        if validation_data:
+            X_val, y_val = validation_data
+    
+        verbose = self.verbose
+
         X_train = np.c_[np.ones(X_train.shape[0]), X_train]
         y_train = y_train.astype("int8")
+
+        if self.activation == "sigmoid":
+            activation_function = lambda x: 1 / (1 + np.exp(-x))
+        elif self.activation == "leaky_relu":
+            activation_function = lambda x: np.maximum(0.1 * x, x)
+        elif self.activation == "relu":
+            activation_function = lambda x: np.maximum(0, x)
+
 
         if len(y_train.shape) == 1:
             self.multiclass = False
@@ -165,17 +189,32 @@ class EvoMLPClassifier:
             y_train = y_train.ravel()
         else:
             self.multiclass = True
-            
 
-        if validation_data:
-            X_val, y_val = validation_data
+        lr_target = self.lr_target
+        lr_initial_decay = self.lr_initial_decay
+        lr_final_decay = self.lr_final_decay
 
-        if self.activation == "sigmoid":
-            activation_function = lambda x: 1 / (1 + np.exp(-x))
-        elif self.activation == "leaky_relu":
-            activation_function = lambda x: np.maximum(0.1 * x, x)
-        else:
-            activation_function = lambda x: np.maximum(0, x)
+        layers = [X_train.shape[1]]
+
+        if self.hidden_layer_sizes:
+            layers = [X_train.shape[1]] + self.hidden_layer_sizes
+
+        if self.multiclass == True:
+            layers = layers + [y_train.shape[1]]
+        elif self.multiclass == False:
+            layers = layers + [1]
+
+        n = self.n
+        ndiv4 = n // 4
+        max_iter = self.max_iter
+        number_of_layers_minus_one = len(layers) - 1
+
+
+        if self.multiclass == True:
+            y_preds = np.zeros((n, y_train.shape[0], y_train.shape[1]))
+        elif self.multiclass == False:
+            y_preds = np.zeros((n, y_train.shape[0]))
+
 
         if self.multiclass == True:
             output_activation_function = lambda x: np.exp(x) / np.sum(np.exp(x), axis = 2, keepdims = True)
@@ -189,26 +228,6 @@ class EvoMLPClassifier:
             def loss_function(y_train, y_preds, sorted_indices):
                 return np.mean(np.abs(y_preds[sorted_indices[ndiv4:]] - y_train), axis = 1)
 
-        lr_target = self.lr_target
-        lr_initial_decay = self.lr_initial_decay
-        lr_final_decay = self.lr_final_decay
-
-        layers = [X_train.shape[1]]
-
-        if self.hidden_layers:
-            layers = [X_train.shape[1]] + self.hidden_layers
-
-        if self.multiclass == True:
-            layers = layers + [y_train.shape[1]]
-        elif self.multiclass == False:
-            layers = layers + [1]
-
-        number_of_layers_minus_one = len(layers) - 1
-        
-        if self.multiclass == True:
-            y_preds = np.zeros((n, y_train.shape[0], y_train.shape[1]))
-        elif self.multiclass == False:
-            y_preds = np.zeros((n, y_train.shape[0]))
 
         nets_loss = np.zeros(n)
         sorted_indices = np.arange(-(ndiv4), n, 1)
@@ -220,7 +239,7 @@ class EvoMLPClassifier:
         for i in range(number_of_layers_minus_one):
             weights += [np.random.normal(0, 1, (n, layers[i], layers[i + 1]))]
 
-        for epoch in range(epochs):
+        for iteration in range(max_iter):
             forward_pass = X_train.T
 
             
@@ -234,7 +253,7 @@ class EvoMLPClassifier:
             nets_loss[sorted_indices[ndiv4:]] = loss_function(y_train, y_preds, sorted_indices)
 
             sorted_indices = np.argsort(nets_loss)
-            mutation_sigma = math.exp(-epoch / (epochs / (lr_initial_decay * math.log10(epochs + 1)))) + lr_final_decay * math.exp(-(epoch + 1) * (1 / (epochs))) + lr_target + (-0.036 * 10 * lr_final_decay)
+            mutation_sigma = math.exp(-iteration / (max_iter / (lr_initial_decay * math.log10(max_iter + 1)))) + lr_final_decay * math.exp(-(iteration + 1) * (1 / (max_iter))) + lr_target + (-0.036 * 10 * lr_final_decay)
 
             for j in range(number_of_layers_minus_one):
                 weights[j][sorted_indices[0 + ndiv4::6]] = (weights[j][sorted_indices[0: ndiv4: 2]] + weights[j][sorted_indices[1: ndiv4: 2]]) / 2 + np.random.normal(0, mutation_sigma, (ndiv4 // 2, layers[j], layers[j + 1]))
@@ -256,11 +275,11 @@ class EvoMLPClassifier:
                 if validation_data:
                     self.validation_loss_history += [np.mean(np.abs(y_val - self.predict(X_val)))]
                     if verbose == 1:
-                        print(f"Epoch {epoch} - loss: {self.training_loss_history[-1]} - val_loss: {self.validation_loss_history[-1]}")
+                        print(f"Epoch {iteration} - loss: {self.training_loss_history[-1]} - val_loss: {self.validation_loss_history[-1]}")
                 else:
                     if verbose == 1:
                         pass
-                        print(f"Epoch {epoch} - loss: {self.training_loss_history[-1]} - {mutation_sigma}")
+                        print(f"Epoch {iteration} - loss: {self.training_loss_history[-1]} - {mutation_sigma}")
 
 
     def predict(self, X):
