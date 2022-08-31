@@ -9,8 +9,8 @@ class EvoMLPRegressor:
         hidden_layer_sizes = False, 
         activation = "relu", 
         lr_target = 0.002, 
-        lr_initial_decay = 20, 
-        lr_final_decay = 0.02, 
+        lr_initial_descent = 20, 
+        lr_final_descent = 0.02, 
         random_state = None,
         verbose = 0
     ):
@@ -20,8 +20,8 @@ class EvoMLPRegressor:
         self.random_state = random_state
         self.activation = activation
         self.lr_target = lr_target
-        self.lr_initial_decay = lr_initial_decay
-        self.lr_final_decay = lr_final_decay
+        self.lr_initial_descent = lr_initial_descent
+        self.lr_final_descent = lr_final_descent
         self.hidden_layer_sizes = hidden_layer_sizes
         self.max_iter = max_iter
         self.verbose = verbose
@@ -60,8 +60,8 @@ class EvoMLPRegressor:
         max_iter = self.max_iter
 
         lr_target = self.lr_target
-        lr_initial_decay = self.lr_initial_decay
-        lr_final_decay = self.lr_final_decay
+        lr_initial_descent = self.lr_initial_descent
+        lr_final_descent = self.lr_final_descent
         
         y_preds = np.zeros((n, y_train.shape[0]))
         nets_loss = np.zeros(n)
@@ -89,7 +89,7 @@ class EvoMLPRegressor:
             
             sorted_indices = np.argsort(nets_loss)
 
-            mutation_sigma = math.exp(-iteration / (max_iter / (lr_initial_decay * math.log10(max_iter + 1)))) + lr_final_decay * math.exp(-(iteration + 1) * (1 / (max_iter))) + lr_target + (-0.035 * 10 * lr_final_decay)
+            mutation_sigma = math.exp(-iteration / (max_iter / (lr_initial_descent * math.log10(max_iter + 1)))) + lr_final_descent * math.exp(-(iteration + 1) * (1 / (max_iter))) + lr_target + (-0.035 * 10 * lr_final_descent)
 
             for j in range(number_of_layers_minus_one):
                 weights[j][sorted_indices[0 + ndiv4::6]] = (weights[j][sorted_indices[0: ndiv4: 2]] + weights[j][sorted_indices[1: ndiv4: 2]]) / 2 + np.random.normal(0, mutation_sigma, (ndiv4 // 2, layers[j], layers[j + 1]))
@@ -143,8 +143,8 @@ class EvoMLPClassifier:
         hidden_layer_sizes = False, 
         activation = "relu", 
         lr_target = 0.002, 
-        lr_initial_decay = 20, 
-        lr_final_decay = 0.02, 
+        lr_initial_descent = 20, 
+        lr_final_descent = 0.02, 
         random_state = None,
         verbose = 0
     ):
@@ -154,8 +154,8 @@ class EvoMLPClassifier:
         self.random_state = random_state
         self.activation = activation
         self.lr_target = lr_target
-        self.lr_initial_decay = lr_initial_decay
-        self.lr_final_decay = lr_final_decay
+        self.lr_initial_descent = lr_initial_descent
+        self.lr_final_descent = lr_final_descent
         self.hidden_layer_sizes = hidden_layer_sizes
         self.max_iter = max_iter
         self.verbose = verbose
@@ -191,8 +191,8 @@ class EvoMLPClassifier:
             self.multiclass = True
 
         lr_target = self.lr_target
-        lr_initial_decay = self.lr_initial_decay
-        lr_final_decay = self.lr_final_decay
+        lr_initial_descent = self.lr_initial_descent
+        lr_final_descent = self.lr_final_descent
 
         layers = [X_train.shape[1]]
 
@@ -253,7 +253,7 @@ class EvoMLPClassifier:
             nets_loss[sorted_indices[ndiv4:]] = loss_function(y_train, y_preds, sorted_indices)
 
             sorted_indices = np.argsort(nets_loss)
-            mutation_sigma = math.exp(-iteration / (max_iter / (lr_initial_decay * math.log10(max_iter + 1)))) + lr_final_decay * math.exp(-(iteration + 1) * (1 / (max_iter))) + lr_target + (-0.036 * 10 * lr_final_decay)
+            mutation_sigma = math.exp(-iteration / (max_iter / (lr_initial_descent * math.log10(max_iter + 1)))) + lr_final_descent * math.exp(-(iteration + 1) * (1 / (max_iter))) + lr_target + (-0.036 * 10 * lr_final_descent)
 
             for j in range(number_of_layers_minus_one):
                 weights[j][sorted_indices[0 + ndiv4::6]] = (weights[j][sorted_indices[0: ndiv4: 2]] + weights[j][sorted_indices[1: ndiv4: 2]]) / 2 + np.random.normal(0, mutation_sigma, (ndiv4 // 2, layers[j], layers[j + 1]))
