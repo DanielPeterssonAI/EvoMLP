@@ -25,11 +25,11 @@ Activation function of the hidden layers.
 Where standard deviance of the "mutation" will end.
 
 
-**lr_initial_decay : *int, default = 20***  
+**lr_initial_descent : *int, default = 20***  
 How quick the inital "mutation" will decay.
 
 
-**lr_final_decay : *float, default = 0.02***  
+**lr_final_descent : *float, default = 0.02***  
 How quick the overall "mutation" will decay.
 
 
